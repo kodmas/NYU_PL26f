@@ -1,0 +1,54 @@
+%{
+#include <stdio.h>
+
+int yylex(void);
+void yyerror(const char *message);
+extern int yylineno;
+%}
+
+%token PRINT IF THEN GOTO INPUT LET GOSUB RETURN CLEAR LIST RUN END
+%token STRING VAR DIGIT CR COMMA PLUMIN MULDIV RELOP LPAREN RPAREN
+%start program
+
+%%
+
+program : (line)+ ;
+
+line : number statement CR
+     | statement CR
+     ;
+
+statement : PRINT expr_list
+          | IF expression relop expression THEN statement
+          | GOTO expression
+          | INPUT var_list
+          | LET VAR '=' expression
+          | GOSUB expression
+          | RETURN
+          | CLEAR
+          | LIST
+          | RUN
+          | END
+          ;
+
+expr_list : (STRING || expression) (COMMA (STRING || expression))* ;
+var_list : VAR (COMMA VAR)* ;
+
+expression : PLUMIN term (PLUMIN term)* ;
+term : factor (MULDIV factor)* ;
+factor : VAR | number | LPAREN expression RPAREN ;
+number : DIGIT+ ;
+
+relop : RELOP | '=' ;
+
+%%
+
+void yyerror(const char *message)
+{
+    fprintf(stderr, "%s on line %d\n", message, yylineno);
+}
+
+int main(void)
+{
+    return yyparse();
+}
